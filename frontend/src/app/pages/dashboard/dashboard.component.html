@@ -1,0 +1,35 @@
+<div>
+<aside id="logo-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+   <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+      <ul class="space-y-2 font-medium">
+         <li>
+            <span class="ms-3">Dashboard</span>
+         </li>
+         <li>
+            <span class="flex-1 ms-3 whitespace-nowrap">Calendars</span>
+         </li>
+         <li>
+            <span class="flex-1 ms-3 whitespace-nowrap">Settings</span>
+         </li>
+         <li>
+            <span class="flex-1 ms-3 whitespace-nowrap">
+              <button type="button" (click)="logout()" class="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">Sign Out</button>
+            </span>
+         </li>
+      </ul>
+   </div>
+</aside>
+
+<div class="p-4 sm:ml-64">
+   <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+
+      <full-calendar [options]="calendarOptions"></full-calendar>
+
+
+   </div>
+</div>
+</div>
+<p>dashboard works!</p>
+<div>
+
+</div>
