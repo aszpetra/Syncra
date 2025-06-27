@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { AuthService } from '../../sevices/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,8 +12,23 @@ import interactionPlugin from '@fullcalendar/interaction';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent {
-  private router = inject(Router);
+export class DashboardComponent implements OnInit{
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+  ) {}
+
+  ngOnInit(): void {
+      this.auth.getDataFromGoogle().subscribe(
+      (res) => {
+        console.log(res);
+      },
+      (error) => {
+        console.error('Google data request failed', error);
+      }
+    );
+  }
+
   calendarOptions: any = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'timeGridWeek',
@@ -24,7 +40,7 @@ export class DashboardComponent {
     allDaySlot: false,
     selectable: true,
     businessHours: {
-      daysOfWeek: [ 1, 2, 3, 4 ],
+      daysOfWeek: [ 1, 2, 3, 4, 5 ],
       startTime: '8:00',
       endTime: '17:00',
     },
