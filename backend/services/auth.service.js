@@ -11,7 +11,7 @@ async function verifyGoogleToken(idToken) {
   });
 
   const payload = ticket.getPayload();
-  console.log(payload);
+  console.log('payload:', payload);
 
   return {
     googleId: payload.sub,

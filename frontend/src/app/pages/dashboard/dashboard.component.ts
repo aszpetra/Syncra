@@ -13,15 +13,20 @@ import { AuthService } from '../../sevices/auth.service';
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit{
+   private eventList: any;
+
   constructor(
     private router: Router,
     private auth: AuthService,
+   
   ) {}
 
   ngOnInit(): void {
+    console.log('oninit')
       this.auth.getDataFromGoogle().subscribe(
       (res) => {
-        console.log(res);
+        console.log('oninit res', res);
+        this.eventList = res
       },
       (error) => {
         console.error('Google data request failed', error);

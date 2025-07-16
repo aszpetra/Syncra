@@ -13,6 +13,10 @@ const oauth2Client = new google.auth.OAuth2(
   redirect_uri
 );
 
+google.options({
+  auth: oauth2Client
+});
+
 async function getGoogleUserInfo(accessToken) {
   const response = await axios.get(
     "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -28,7 +32,13 @@ async function getGoogleUserInfo(accessToken) {
 
 async function getCalendarEvents(accessToken) {
   const now = new Date();
-  const response = await axios.get(
+	const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+	const res = await calendar.events.list({
+    calendarId: 'primary'
+  });
+	console.log('calendar res', res.body);
+  /*const response = await axios.get(
     "https://www.googleapis.com/calendar/v3/calendars/primary",
     {
       headers: {
@@ -41,9 +51,9 @@ async function getCalendarEvents(accessToken) {
         orderBy: "startTime",
       },
     }
-  );
+  );*/
 
-  return response.data.items;
+  return res.body._events;
 }
 
 async function handleGoogleLogin(req, res) {
@@ -52,7 +62,7 @@ async function handleGoogleLogin(req, res) {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    console.log(tokens);
+    console.log('tokens', tokens);
     const access_token = tokens.access_token;
 
     /*
@@ -77,14 +87,16 @@ async function handleGoogleLogin(req, res) {
 }
 
 async function handleDataRequestFromGoogle(req, res) {
-  const access_token = req.session.accessToken;
+	console.log('handleDataRequestFromGoogle')
+  const access_token = req.session.token;
+	console.log('access token:', access_token);
   //const userData = await getGoogleUserInfo(access_token);
   //console.log(userData);
 
   const calendarData = await getCalendarEvents(access_token);
-  console.log(calendarData);
+  console.log('calendar data: ', calendarData);
 
-  res.status(200).json({ user: userData, calendar: calendarData });
+  res.status(200).json({ calendar: calendarData });
 }
 
 module.exports = { handleGoogleLogin, handleDataRequestFromGoogle };

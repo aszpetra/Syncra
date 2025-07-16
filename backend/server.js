@@ -23,8 +23,7 @@ app.use(session({
   secret: 'nagyontitkoskulcs',     // szükséges titkosításhoz
   resave: false,                   // ne mentse újra minden kérésnél
   saveUninitialized: false,        // ne hozzon létre üres sessiont
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 1,    // 1 óra (miliszekundumban)
+  cookie: {    // 1 óra (miliszekundumban)
     httpOnly: true,                // JS nem fér hozzá (biztonság)
     secure: false,                 // true ha HTTPS-t használsz
     sameSite: 'lax',               // védi a CSRF-től

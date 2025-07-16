@@ -41,7 +41,7 @@ export class LoginComponent implements OnInit {
   async handleCredentialResponse(response: any) {
     this.auth.loginWithGoogle(response.credential).subscribe(
       (res) => {
-        console.log(res)
+        console.log('login res', res)
         this.router.navigate(['/dashboard']);
       },
       (error) => {
