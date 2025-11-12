@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -18,18 +19,20 @@ export class DashboardComponent implements OnInit{
   constructor(
     private router: Router,
     private auth: AuthService,
-   
+
   ) {}
 
   ngOnInit(): void {
-    console.log('oninit')
-      this.auth.getDataFromGoogle().subscribe(
-      (res) => {
-        console.log('oninit res', res);
-        this.eventList = res
+    this.auth.getDataFromGoogle().subscribe(
+      res => {
+        console.log('Calendar data:', res.calendar);
+        // Itt kellene frissíteni a calendarOptions.events-t
+        this.calendarOptions.events = res.calendar;
       },
-      (error) => {
-        console.error('Google data request failed', error);
+      err => {
+        console.error('Failed to get data', err);
+        // Ha 401 (Unauthorized) hibát kapsz, valószínűleg lejárt a session
+        this.router.navigate(['/login']);
       }
     );
   }
@@ -59,7 +62,7 @@ export class DashboardComponent implements OnInit{
   };
 
   logout() {
-    // mock logout
+    localStorage.removeItem('access_token');
     this.router.navigate(['/login']);
   }
 }

@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments';
 import { Observable } from 'rxjs';
 
@@ -11,13 +12,16 @@ export class AuthService {
   private dataUrl = `${environment.apiBaseUrl}/data`;
   private http = inject(HttpClient);
 
-  constructor() {}
 
-  loginWithGoogle(token: string): Observable<any> {
-    return this.http.post<any>(this.authUrl, { token });
+  constructor(private router: Router) {}
+
+  loginWithGoogle(token: string) {
+    return this.http.post<{token: any}>(this.authUrl, { token });
   }
 
-  getDataFromGoogle() {
-    return this.http.get(this.dataUrl, { withCredentials: true });
+  getDataFromGoogle(): Observable<{calendar: any}> {
+    return this.http.get<{calendar: any}>(this.dataUrl, {
+      withCredentials: true
+    });
   }
 }

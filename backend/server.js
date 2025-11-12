@@ -36,7 +36,7 @@ app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
 
-/*mongoose.connect(mongo_uri, {
+mongoose.connect(mongo_uri, {
 })
 .then(() => console.log('Sikeres kapcsolat a MongoDB-hez'))
-.catch((err) => console.error('Hiba a kapcsolódás során:', err));*/
+.catch((err) => console.error('Hiba a kapcsolódás során:', err));

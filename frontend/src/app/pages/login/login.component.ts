@@ -21,7 +21,7 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-      
+
   }
 
   loginWithGoogleCalendarAccess(): void {
@@ -35,18 +35,18 @@ export class LoginComponent implements OnInit {
     });
 
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
- 
+
   }
 
   async handleCredentialResponse(response: any) {
     this.auth.loginWithGoogle(response.credential).subscribe(
-      (res) => {
+      res => {
         console.log('login res', res)
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['dashboard']);
       },
       (error) => {
         console.error('Google authentication failed', error);
       }
     );
-  }  
+  }
 }

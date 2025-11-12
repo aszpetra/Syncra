@@ -13,6 +13,7 @@ const teacherSchema = new mongoose.Schema({
   },
   name: String,
   profilePicture: String,
+  accessToken: String,
   calendars: [
     {
       calendarId: String,

@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { OAuth2Client } = require('google-auth-library');
+const Teacher = require('../models/teacher.model');
 
 const client_id = process.env.GOOGLE_CLIENT_ID;
 const client = new OAuth2Client(client_id);
@@ -21,4 +22,26 @@ async function verifyGoogleToken(idToken) {
   };
 }
 
-module.exports = { verifyGoogleToken };
+async function createNewUserLogIn(userData, accessToken) {
+  console.log('createNewUserLogIn');
+  console.log('userData:', userData);
+  let teacher = await Teacher.findOne({ googleId: userData.sub });
+
+  if (!teacher) {
+    teacher = new Teacher({
+      googleId: userData.id,
+      email: userData.email,
+      name: userData.name,
+      profilePicture: userData.picture,
+      accessToken: accessToken
+    });
+
+    await teacher.save();
+  }
+
+  console.log(teacher);
+
+  return teacher;
+}
+
+module.exports = { verifyGoogleToken, createNewUserLogIn };
