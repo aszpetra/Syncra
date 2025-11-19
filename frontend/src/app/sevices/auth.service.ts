@@ -15,10 +15,6 @@ export class AuthService {
 
   constructor(private router: Router) {}
 
-  loginWithGoogle(token: string) {
-    return this.http.post<{token: any}>(this.authUrl, { token });
-  }
-
   getDataFromGoogle(): Observable<{calendar: any}> {
     return this.http.get<{calendar: any}>(this.dataUrl, {
       withCredentials: true

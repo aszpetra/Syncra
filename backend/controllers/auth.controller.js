@@ -71,9 +71,7 @@ async function handleGoogleLogin(req, res) {
 }
 
 async function getAuthenticatedClient(req) {
-  if (!req.session.tokens) {
-    throw new Error('Nincs session token');
-  }
+
   const requestClient = new google.auth.OAuth2(
     client_id,
     client_secret,
@@ -112,10 +110,10 @@ async function handleDataRequestFromGoogle(req, res) {
     // 2. LÉPÉS: Használd a friss klienst az adatlekéréshez.
     // A 'getGoogleUserInfo' és 'getCalendarEvents' már helyesen
     // egy 'authClient' objektumot várnak, nem egy token stringet.
-    const userData = await getGoogleUserInfo(authClient);
+
     const calendarData = await getCalendarEvents(authClient);
     
-    console.log('Naptár adatok sikeresen lekérve');
+    console.log('Naptár adatok sikeresen lekérve', calendarData);
 
     // 3. LÉPÉS: Küldd vissza az adatot
     res.status(200).json({ calendar: calendarData });

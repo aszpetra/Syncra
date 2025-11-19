@@ -23,9 +23,7 @@ async function verifyGoogleToken(idToken) {
 }
 
 async function createNewUserLogIn(userData, accessToken) {
-  console.log('createNewUserLogIn');
-  console.log('userData:', userData);
-  let teacher = await Teacher.findOne({ googleId: userData.sub });
+  let teacher = await Teacher.findOne({ googleId: userData.id });
 
   if (!teacher) {
     teacher = new Teacher({
