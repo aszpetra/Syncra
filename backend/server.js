@@ -20,13 +20,14 @@ app.use(cors({
 }));
 
 app.use(session({
-  secret: 'nagyontitkoskulcs',     // szükséges titkosításhoz
-  resave: false,                   // ne mentse újra minden kérésnél
-  saveUninitialized: false,        // ne hozzon létre üres sessiont
-  cookie: {    // 1 óra (miliszekundumban)
-    httpOnly: true,                // JS nem fér hozzá (biztonság)
-    secure: false,                 // true ha HTTPS-t használsz
-    sameSite: 'lax',               // védi a CSRF-től
+  secret: 'nagyontitkoskulcs',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge: 1000 * 60 * 60 * 24
   }
 }));
 
@@ -36,7 +37,6 @@ app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
 
-mongoose.connect(mongo_uri, {
-})
-.then(() => console.log('Sikeres kapcsolat a MongoDB-hez'))
-.catch((err) => console.error('Hiba a kapcsolódás során:', err));
+mongoose.connect(mongo_uri, {})
+  .then(() => console.log('Sikeres kapcsolat a MongoDB-hez'))
+  .catch((err) => console.error('Hiba a kapcsolódás során:', err));

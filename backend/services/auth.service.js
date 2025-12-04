@@ -22,7 +22,7 @@ async function verifyGoogleToken(idToken) {
   };
 }
 
-async function createNewUserLogIn(userData, accessToken) {
+async function createNewUserLogIn(userData, accessToken, refreshToken) {
   let teacher = await Teacher.findOne({ googleId: userData.id });
 
   if (!teacher) {
@@ -31,13 +31,15 @@ async function createNewUserLogIn(userData, accessToken) {
       email: userData.email,
       name: userData.name,
       profilePicture: userData.picture,
-      accessToken: accessToken
+      accessToken: accessToken,
+      refreshToken: refreshToken || null
     });
 
     await teacher.save();
+  } else {
+    teacher.refreshToken = refreshToken;
+    await teacher.save();
   }
-
-  console.log(teacher);
 
   return teacher;
 }

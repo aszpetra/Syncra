@@ -1,0 +1,15 @@
+<div class="p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold">Calendar Overview</h1>
+
+        <button (click)="generateAndCopyLink()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+            Generate Public Booking Link 🔗
+        </button>
+    </div>
+
+<div class="p-6">
+   <div class="border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+      <full-calendar [options]="calendarOptions"></full-calendar>
+   </div>
+</div>

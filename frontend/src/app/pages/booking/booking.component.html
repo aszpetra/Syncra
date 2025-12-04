@@ -1,0 +1,67 @@
+<div class="flex max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 h-screen">
+
+    <div class="w-2/3 pr-8 border-r border-gray-200">
+        <div class="mt-8 max-h-[80vh] overflow-y-auto">
+
+    <div *ngIf="groupedAvailability | keyvalue as dateGroups; else loading" class="space-y-8">
+
+        <div *ngFor="let group of dateGroups" class="pb-4 border-b border-gray-200">
+
+            <h3 class="text-2xl font-extrabold text-gray-800 mb-4">
+                {{ group.key | date:'fullDate' }}
+            </h3>
+
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                <button *ngFor="let slot of group.value"
+                        (click)="selectSlot(slot)"
+                        [ngClass]="{'bg-indigo-600 text-white shadow-xl': slot === bookingDetails.slot, 'bg-gray-100 hover:bg-indigo-100 text-gray-800': slot !== bookingDetails.slot}"
+                        class="p-3 rounded-lg text-center font-medium border cursor-pointer transition duration-150">
+                    {{ slot.start | date:'shortTime' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    <ng-template #loading>
+        <p class="text-indigo-600 font-medium">Loading available slots...</p>
+    </ng-template>
+</div>
+
+    </div>
+
+    <div class="w-1/3 pl-8">
+        <h2 class="text-2xl font-extrabold text-indigo-700 mb-6">Confirm Booking</h2>
+
+        <div class="p-4 mb-6 rounded-lg border-2 border-dashed border-indigo-300 bg-indigo-50">
+            <p *ngIf="!bookingDetails.slot" class="text-indigo-600 font-medium">Please select an available time slot.</p>
+            <div *ngIf="bookingDetails.slot">
+                <p class="text-lg font-semibold text-indigo-700">Time:</p>
+                <p class="text-xl font-bold text-indigo-900">{{ bookingDetails.slot.start | date:'medium' }}</p>
+            </div>
+        </div>
+
+        <form (ngSubmit)="submitBooking()">
+            <div class="mb-4">
+                <label for="clientName" class="block text-gray-700 text-sm font-bold mb-2">Your Name *</label>
+                <input [(ngModel)]="bookingDetails.clientName" name="clientName" type="text" required
+                       class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label for="clientEmail" class="block text-gray-700 text-sm font-bold mb-2">Your Email *</label>
+                <input [(ngModel)]="bookingDetails.clientEmail" name="clientEmail" type="email" required
+                       class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-6">
+                <label for="notes" class="block text-gray-700 text-sm font-bold mb-2">Notes / Reason for Booking</label>
+                <textarea [(ngModel)]="bookingDetails.notes" name="notes" rows="3"
+                          class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <button type="submit" [disabled]="!bookingDetails.slot || !bookingDetails.clientName || !bookingDetails.clientEmail"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded w-full transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                Confirm & Book Appointment
+            </button>
+        </form>
+    </div>
+</div>

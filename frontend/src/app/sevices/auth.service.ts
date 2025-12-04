@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private authUrl = `${environment.apiBaseUrl}/auth`;
+  private userIdUrl = `${environment.apiBaseUrl}/api/user/id`;
   private dataUrl = `${environment.apiBaseUrl}/data`;
   private http = inject(HttpClient);
 
@@ -19,5 +19,9 @@ export class AuthService {
     return this.http.get<{calendar: any}>(this.dataUrl, {
       withCredentials: true
     });
+  }
+
+  getTeacherIdForLink(): Observable<{ teacherId: string }> {
+      return this.http.get<{ teacherId: string }>(this.userIdUrl, { withCredentials: true });
   }
 }

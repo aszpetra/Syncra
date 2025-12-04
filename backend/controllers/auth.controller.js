@@ -28,11 +28,12 @@ async function getGoogleUserInfo(authClient) {
 
 async function getCalendarEvents(authClient) {
   const calendar = google.calendar({ version: 'v3', auth: authClient });
+  const oneWeekInMilisec = 7 * 24 * 60 * 60 * 1000;
 
 	const res = await calendar.events.list({
     calendarId: 'primary',
-    timeMin: (new Date()).toISOString(), 
     maxResults: 20,
+    timeMin: (new Date(Date.now() - oneWeekInMilisec)).toISOString(),
     singleEvents: true,
     orderBy: 'startTime',
   });
@@ -46,9 +47,10 @@ async function handleGoogleLogin(req, res) {
     const requestClient = new google.auth.OAuth2(client_id, client_secret, redirect_uri);
     requestClient.setCredentials(tokens);
     const access_token = tokens.access_token;
+    const refresh_token = tokens.refresh_token;
 
     const userData = await getGoogleUserInfo(requestClient);
-    const currentUser = await createNewUserLogIn(userData, access_token);
+    const currentUser = await createNewUserLogIn(userData, access_token, refresh_token);
 
     req.session.tokens = tokens; 
     req.session.user = userData;
@@ -72,6 +74,11 @@ async function handleGoogleLogin(req, res) {
 
 async function getAuthenticatedClient(req) {
 
+  if (!req.session || !req.session.tokens) {
+    console.error('Nincs session token (valószínűleg nincs bejelentkezve)');
+    throw new Error('Nincs session token');
+  }
+
   const requestClient = new google.auth.OAuth2(
     client_id,
     client_secret,
@@ -79,13 +86,16 @@ async function getAuthenticatedClient(req) {
   );
   requestClient.setCredentials(req.session.tokens);
   try {
-    await requestClient.getAccessToken();
-    if (requestClient.credentials.access_token !== req.session.tokens.access_token) {
+    const tokenResponse = await requestClient.getAccessToken();
+    const newAccessToken = tokenResponse?.token || requestClient.credentials?.access_token;
+
+    if (newAccessToken && req.session.tokens.access_token &&
+        newAccessToken !== req.session.tokens.access_token) {
       console.log('Google token frissítve.');
-      req.session.tokens = requestClient.credentials;
+      req.session.tokens.access_token = newAccessToken;
 
       await new Promise((resolve, reject) => {
-        req.session.save(err => err ? reject(err) : resolve());
+        req.session.save(err => (err ? reject(err) : resolve()));
       });
     }
     
@@ -99,38 +109,30 @@ async function getAuthenticatedClient(req) {
 
 async function handleDataRequestFromGoogle(req, res) {
 	try {
-    // 1. LÉPÉS: Kérj egy hitelesített klienst.
-    // Ez a függvény elvégzi a "piszkos munkát":
-    // - Megnézi, van-e session.
-    // - Létrehozza a klienst a tokenekkel.
-    // - FRISSÍTI a tokent, ha lejárt.
-    // - Elmenti a frissített tokent a session-be.
     const authClient = await getAuthenticatedClient(req);
-
-    // 2. LÉPÉS: Használd a friss klienst az adatlekéréshez.
-    // A 'getGoogleUserInfo' és 'getCalendarEvents' már helyesen
-    // egy 'authClient' objektumot várnak, nem egy token stringet.
-
     const calendarData = await getCalendarEvents(authClient);
     
     console.log('Naptár adatok sikeresen lekérve', calendarData);
 
-    // 3. LÉPÉS: Küldd vissza az adatot
     res.status(200).json({ calendar: calendarData });
 
   } catch (error) {
-    // Ha 'getAuthenticatedClient' hibát dobott (pl. nincs session,
-    // vagy a refresh token is lejárt), az is ide fog kerülni.
     console.error('Hiba a Google adatok lekérése közben:', error.message);
     
     if (error.message.includes('token')) {
-      // Pl. "Nincs session token" vagy "Token frissítési hiba"
       return res.status(401).json({ message: 'Nincs bejelentkezve (session lejárt vagy token hiba)' });
     }
-    
-    // Egyéb hiba (pl. Google API hiba)
     res.status(500).json({ message: 'Szerver hiba az adatlekérés közben' });
   }
 }
 
-module.exports = { handleGoogleLogin, handleDataRequestFromGoogle };
+async function handleLogout(req, res) {};
+
+async function getTeacherIdForLink(req, res) {
+    if (!req.session.user || !req.session.user._id) {
+        return res.status(401).json({ message: 'Not authenticated.' });
+    }
+    res.status(200).json({ teacherId: req.session.user._id });
+}
+
+module.exports = { handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink };
