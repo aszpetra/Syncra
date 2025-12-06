@@ -1,42 +1,34 @@
 const { google } = require('googleapis');
 require('dotenv').config();
 const Teacher = require('../models/teacher.model')
+const { getCalendarEvents } = require('./auth.controller');
 
 const client_id = process.env.GOOGLE_CLIENT_ID; 
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
 
 async function getAuthenticatedClientFromDB(teacherId) {
-    
-    // 1. Keresd meg a tanárt és a refresh token-t a DB-ben
     const teacher = await Teacher.findById(teacherId).select('refreshToken'); 
     console.log('Teacher from DB:', teacher);
 
-    // 2. Érvénytelen token/tanár ellenőrzés
     if (!teacher || !teacher.refreshToken) {
         throw new Error('Teacher not found or missing refresh token in database. Cannot authenticate Google client.');
     }
     
-    // 3. Hozd létre az OAuth2 klienst
     const oauth2Client = new google.auth.OAuth2(
         client_id,
         client_secret
-        // A redirect_uri itt nem feltétlenül kell, mert csak tokeneket frissítünk
     );
     
-    // 4. Állítsd be a tokent a DB-ből származó refresh token-nel
     oauth2Client.setCredentials({
         refresh_token: teacher.refreshToken,
     });
 
     try {
-        // 5. Frissítsd az access token-t (ezt teszi lehetővé a Google API hívást)
-        // A Google library automatikusan használja a refresh tokent.
         const { credentials } = await oauth2Client.refreshAccessToken();
 
-        // Opcionális: A frissített access tokent beállítjuk a kliensnek
         oauth2Client.setCredentials(credentials); 
         
-        return oauth2Client; // A hitelesített kliens visszaküldése
+        return oauth2Client; 
 
     } catch (error) {
         // Gyakori hiba: A refresh token is lejárt (pl. 6 hónap után)
@@ -51,7 +43,7 @@ async function getPublicAvailability(req, res) {
     
     try {
         // 1. Előkészületek (Hitelesítés és foglalt slotok lekérése a Google-től)
-        const authClient = await getAuthenticatedClientFromDB(teacherId); // Ezt már megírtad korábban
+        const authClient = await getAuthenticatedClientFromDB(teacherId); 
         
         // A foglalt időpontok lekérése 14 napra előre
         const SLOT_DURATION_MINUTES = 60; // 1 órás foglalási idő
@@ -59,11 +51,14 @@ async function getPublicAvailability(req, res) {
         const now = new Date();
         const twoWeeksFromNow = new Date(now.getTime() + SLOTS_IN_ADVANCE_DAYS * 24 * 60 * 60 * 1000);
 
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
         const response = await calendar.events.list({
-            // ... (Google API hívás beállításai) ...
+            calendarId: 'primary',
             timeMin: now.toISOString(),
             timeMax: twoWeeksFromNow.toISOString(),
-            // ...
+            orderBy: 'startTime',
+            singleEvents: true,
         });
         const busySlots = response.data.items.map(event => ({
             start: new Date(event.start.dateTime || event.start.date), // Date objectek használata egyszerűsíti az összehasonlítást

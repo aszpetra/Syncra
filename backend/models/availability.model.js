@@ -1,28 +1,28 @@
 const mongoose = require('mongoose');
 
-const appointmentSchema = new mongoose.Schema({
-  teacherId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Teacher',
-    required: true,
-  },
-  calendarId: {
-    type: String,
-    required: true,
-  },
-  dayOfWeek: {
-    type: String,
-    enum: ['1', '2', '3', '4', '5', '6', '7'], // monday, tuesday, wednesday, thursday, friday, saturday, sunday
-    required: true
-  },
-  endTime: {
-    type: Date,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+const TimeSlotSchema = new mongoose.Schema({
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true }
+}, { _id: false });
+
+const DayAvailabilitySchema = new mongoose.Schema({
+    dayOfWeek: { 
+        type: Number, 
+        required: true, 
+        min: 0, 
+        max: 6 
+    },
+    slots: [TimeSlotSchema]
+}, { _id: false });
+
+const AvailabilitySchema = new mongoose.Schema({
+    teacher: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Teacher',
+        required: true,
+        unique: true
+    },
+    weeklyAvailability: [DayAvailabilitySchema]
 });
 
-module.exports = mongoose.model('Availability', availabilitySchema);
+module.exports = mongoose.model('Availability', AvailabilitySchema);

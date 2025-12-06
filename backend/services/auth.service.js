@@ -34,10 +34,12 @@ async function createNewUserLogIn(userData, accessToken, refreshToken) {
       accessToken: accessToken,
       refreshToken: refreshToken || null
     });
-
     await teacher.save();
   } else {
-    teacher.refreshToken = refreshToken;
+    if (refreshToken) { 
+        teacher.refreshToken = refreshToken;
+    }
+    teacher.accessToken = accessToken;
     await teacher.save();
   }
 

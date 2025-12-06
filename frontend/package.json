@@ -11,6 +11,7 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^19.2.17",
     "@angular/cdk": "^19.2.19",
     "@angular/common": "^19.2.0",
     "@angular/compiler": "^19.2.0",
@@ -28,6 +29,7 @@
     "@tailwindcss/postcss": "^4.1.10",
     "@types/gapi.auth2": "^0.0.61",
     "express": "^4.18.2",
+    "ngx-toastr": "^19.1.0",
     "postcss": "^8.5.5",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.10",

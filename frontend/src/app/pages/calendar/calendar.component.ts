@@ -8,7 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { AuthService } from '../../sevices/auth.service';
 import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
-
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-calendar',
@@ -17,8 +17,9 @@ import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
   styleUrl: './calendar.component.scss'
 })
 export class CalendarComponent  implements OnInit{
-  public bookingLink: string = ''; // Az URL megjelenítéséhez
+  public bookingLink: string = '';
   private clipboard = inject(Clipboard);
+  private toastr = inject(ToastrService);
 
   constructor(
     private router: Router,
@@ -30,8 +31,6 @@ export class CalendarComponent  implements OnInit{
     if (isPlatformBrowser(this.platformId)) {
       this.auth.getDataFromGoogle().subscribe(
       res => {
-        console.log('Calendar data:', res.calendar);
-
         const events = res.calendar.map((e: any) => ({
           title: e.summary,
           start: e.start.dateTime || e.start.date,
@@ -52,18 +51,18 @@ export class CalendarComponent  implements OnInit{
   }
 
   generateAndCopyLink(): void {
-    this.auth.getTeacherIdForLink().subscribe({
+    this.auth.getTeacherId().subscribe({
       next: (response) => {
         const baseUrl = window.location.origin;
         const link = `${baseUrl}/booking/${response.teacherId}`;
         this.bookingLink = link;
 
         this.clipboard.copy(link);
-        alert('Booking link copied to clipboard!');
+        this.toastr.success('Booking link copied to clipboard!', 'Success');
       },
       error: (err) => {
         console.error('Failed to get teacher ID:', err);
-        alert('Failed to generate link. Please log in again.');
+        this.toastr.error('Failed to generate link. Please log in again.', 'Error');
       }
     });
   }
@@ -84,9 +83,9 @@ export class CalendarComponent  implements OnInit{
       endTime: '17:00',
     },
     headerToolbar: {
-    left: 'prev,next',
-    center: 'title',
-    right: 'timeGridWeek,dayGridMonth'
+      left: 'prev,next',
+      center: 'title',
+      right: 'timeGridWeek,dayGridMonth'
     },
     height: 'auto'
   };

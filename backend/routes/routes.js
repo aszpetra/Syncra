@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink } = require('../controllers/auth.controller');
 const bookingController = require('../controllers/booking.controller');
+const availabilityController = require('../controllers/availability.controller');
 
 router.get('/public/availability/:teacherId', bookingController.getPublicAvailability);
 router.post('/public/book', bookingController.handlePublicBooking);
@@ -20,5 +21,7 @@ router.get('/api/user/id', getTeacherIdForLink);
 // --- PRIVATE CALENDAR INTEGRATION ROUTES (4.) ---
 router.get('/api/calendars/list', bookingController.listGoogleCalendars);
 router.post('/api/calendars/select', bookingController.selectCalendarsForSync);
+router.get('/availability/:teacherId', availabilityController.getTeacherAvailability); 
+router.post('/availability', availabilityController.saveTeacherAvailability);
 
 module.exports = router;

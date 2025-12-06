@@ -32,7 +32,6 @@ async function getCalendarEvents(authClient) {
 
 	const res = await calendar.events.list({
     calendarId: 'primary',
-    maxResults: 20,
     timeMin: (new Date(Date.now() - oneWeekInMilisec)).toISOString(),
     singleEvents: true,
     orderBy: 'startTime',
@@ -135,4 +134,4 @@ async function getTeacherIdForLink(req, res) {
     res.status(200).json({ teacherId: req.session.user._id });
 }
 
-module.exports = { handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink };
+module.exports = { handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink, getCalendarEvents };

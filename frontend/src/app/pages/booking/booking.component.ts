@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { BookingService } from '../../sevices/booking.service';
+import { ToastrService } from 'ngx-toastr';
 
 interface Slot {
   start: string;
@@ -19,29 +20,25 @@ interface Slot {
 export class BookingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private bookingService = inject(BookingService);
-  // private bookingService = inject(BookingService); // Éles logikához kell majd
+  private toastr = inject(ToastrService);
 
   teacherId: string = '';
-  selectedDate: string = new Date().toISOString().split('T')[0]; // Mai dátum YYYY-MM-DD formátumban
+  selectedDate: string = new Date().toISOString().split('T')[0];
 
-  // Üres tömb a szabad slotoknak
   availability: Slot[] = [];
   groupedAvailability: { [key: string]: Slot[] } = {}
 
-  // A felhasználó által kitöltött űrlap adatok
   bookingDetails = {
     clientName: '',
     clientEmail: '',
     notes: '',
-    slot: null as Slot | null // A kiválasztott slot
+    slot: null as Slot | null
   };
 
   ngOnInit(): void {
-    // 1. Olvasd ki a teacherId-t az URL-ből
     this.route.paramMap.subscribe(params => {
       this.teacherId = params.get('teacherId') || '';
       if (this.teacherId) {
-        // fetchAvailability() - Éles hívás itt történne
         this.fetchAvailability();
       }
     });
@@ -51,16 +48,14 @@ export class BookingComponent implements OnInit {
     this.bookingService.getPublicAvailability(this.teacherId).subscribe({
       next: (response) => {
         this.availability = response.availableSlots;
-        this.groupSlotsByDate(); // Hívjuk meg a csoportosítást
+        this.groupSlotsByDate();
       },
       error: (err) => console.error('Error fetching availability:', err)
     });
   }
 
-  // ÚJ: Csoportosító függvény
   groupSlotsByDate(): void {
     this.groupedAvailability = this.availability.reduce((groups, slot) => {
-      // Feltételezve, hogy a backend a "dateKey"-ben adja vissza YYYY-MM-DD-t
       const date = slot.start.split('T')[0];
       if (!groups[date]) {
         groups[date] = [];
@@ -73,8 +68,7 @@ export class BookingComponent implements OnInit {
   onDateChange(event: Event): void {
     const dateString = (event.target as HTMLInputElement).value;
     this.selectedDate = dateString;
-    this.bookingDetails.slot = null; // Töröljük a slotot, ha dátumot váltott
-    // Éles logikához: fetchAvailability()
+    this.bookingDetails.slot = null;
   }
 
   selectSlot(slot: Slot): void {
@@ -83,12 +77,9 @@ export class BookingComponent implements OnInit {
 
   submitBooking(): void {
     if (this.bookingDetails.slot) {
-      console.log('Booking submitted:', this.bookingDetails);
-      // Következő lépésben: this.bookingService.submitBooking(...) hívás jön ide
+      this.toastr.success('Booking submitted successfully!', 'Success');
     } else {
-      alert('Please select a time slot.');
+      this.toastr.error('Please select a time slot.', 'Error');
     }
   }
-
-
 }

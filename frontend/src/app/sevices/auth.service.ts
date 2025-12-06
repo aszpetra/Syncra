@@ -21,7 +21,7 @@ export class AuthService {
     });
   }
 
-  getTeacherIdForLink(): Observable<{ teacherId: string }> {
+  getTeacherId(): Observable<{ teacherId: string }> {
       return this.http.get<{ teacherId: string }>(this.userIdUrl, { withCredentials: true });
   }
 }
