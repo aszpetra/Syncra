@@ -15,12 +15,14 @@ const teacherSchema = new mongoose.Schema({
   profilePicture: String,
   accessToken: String,
   refreshToken: String,
-  calendars: [
-    {
-      calendarId: String,
-      name: String,
-    }
-  ],
+  blockingCalendarIds: { 
+        type: [String],
+        default: []
+    },
+    bookingCalendarId: { 
+        type: String,
+        default: 'primary'
+    },
   createdAt: {
     type: Date,
     default: Date.now

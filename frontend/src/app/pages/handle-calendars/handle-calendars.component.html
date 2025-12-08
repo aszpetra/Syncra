@@ -1,0 +1,47 @@
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Naptárbeállítások</h1>
+
+    <form (ngSubmit)="saveSettings()" class="space-y-8">
+
+        <div *ngIf="calendarList.length === 0">
+            <p class="text-gray-500">Naptárak betöltése...</p>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-700">🗓️ Blokkoló Naptárak (Foglaltság Ellenőrzése)</h2>
+            <div class="space-y-2">
+                <div *ngFor="let cal of calendarList" class="flex items-center">
+                    <input
+                        type="checkbox"
+                        [id]="'block-' + cal.id"
+                        [checked]="selectedBlockingCalendars.includes(cal.id)"
+                        (change)="toggleBlockingCalendar(cal.id, $event)"
+                        class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    >
+                    <label [for]="'block-' + cal.id" class="ml-3 text-sm font-medium text-gray-700">
+                        {{ cal.name }} <span *ngIf="cal.isPrimary" class="text-xs text-indigo-500">(Elsődleges)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-700">📥 Foglalás Mentési Helye</h2>
+
+            <select
+                id="savingCalendar"
+                [(ngModel)]="savingCalendarId"
+                name="savingCalendar"
+                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+                <option *ngFor="let cal of calendarList" [value]="cal.id">
+                    {{ cal.name }} <span *ngIf="cal.isPrimary">(Elsődleges)</span>
+                </option>
+            </select>
+        </div>
+
+        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition duration-200">
+            Beállítások mentése
+        </button>
+    </form>
+</div>

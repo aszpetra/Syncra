@@ -7,6 +7,12 @@ export interface Slot { startTime: string; endTime: string; }
 export interface DayAvailability { dayOfWeek: number; slots: Slot[]; }
 export interface AvailabilityResponse { weeklyAvailability: DayAvailability[]; }
 
+export interface CalendarItem {
+    id: string;
+    name: string;
+    isPrimary: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })

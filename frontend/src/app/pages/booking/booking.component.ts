@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms'
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { BookingService } from '../../sevices/booking.service';
 import { ToastrService } from 'ngx-toastr';
+import { take } from 'rxjs/internal/operators/take';
 
 interface Slot {
   start: string;
@@ -75,11 +76,44 @@ export class BookingComponent implements OnInit {
     this.bookingDetails.slot = slot;
   }
 
+  resetBookingDetails(): void {
+    this.bookingDetails = {
+        clientName: '',
+        clientEmail: '',
+        notes: '',
+        slot: null as Slot | null
+    };
+    this.fetchAvailability();
+  }
+
   submitBooking(): void {
-    if (this.bookingDetails.slot) {
-      this.toastr.success('Booking submitted successfully!', 'Success');
-    } else {
-      this.toastr.error('Please select a time slot.', 'Error');
+    if (!this.bookingDetails.slot) {
+        this.toastr.warning('Please select a time slot before booking!');
+        return;
     }
+    if (!this.bookingDetails.clientName || !this.bookingDetails.clientEmail) {
+        this.toastr.warning('Please fill in your name and email before booking!');
+        return;
+    }
+
+    const dataToSend = {
+        teacherId: this.teacherId,
+        clientName: this.bookingDetails.clientName,
+        clientEmail: this.bookingDetails.clientEmail,
+        notes: this.bookingDetails.notes,
+        slotStart: this.bookingDetails.slot.start,
+        slotEnd: this.bookingDetails.slot.end,
+    };
+
+    this.bookingService.submitBooking(dataToSend).pipe(take(1)).subscribe({
+        next: (response) => {
+          this.toastr.success('Please check your email for the event invite.', 'Successful booking');
+          this.resetBookingDetails();
+        },
+        error: (err) => {
+            console.error('Error during booking:', err);
+            this.toastr.error('An error occurred while submitting the booking. Please try again!', 'Booking Failed');
+        }
+    });
   }
 }

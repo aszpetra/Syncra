@@ -90,7 +90,6 @@ async function getAuthenticatedClient(req) {
 
     if (newAccessToken && req.session.tokens.access_token &&
         newAccessToken !== req.session.tokens.access_token) {
-      console.log('Google token frissítve.');
       req.session.tokens.access_token = newAccessToken;
 
       await new Promise((resolve, reject) => {
@@ -110,8 +109,6 @@ async function handleDataRequestFromGoogle(req, res) {
 	try {
     const authClient = await getAuthenticatedClient(req);
     const calendarData = await getCalendarEvents(authClient);
-    
-    console.log('Naptár adatok sikeresen lekérve', calendarData);
 
     res.status(200).json({ calendar: calendarData });
 
@@ -134,4 +131,4 @@ async function getTeacherIdForLink(req, res) {
     res.status(200).json({ teacherId: req.session.user._id });
 }
 
-module.exports = { handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink, getCalendarEvents };
+module.exports = { getGoogleUserInfo, handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink, getCalendarEvents };

@@ -1,14 +1,15 @@
 const { google } = require('googleapis');
 require('dotenv').config();
 const Teacher = require('../models/teacher.model')
-const { getCalendarEvents } = require('./auth.controller');
+const { getGoogleUserInfo } = require('./auth.controller');
+const Availability = require('../models/availability.model');
 
 const client_id = process.env.GOOGLE_CLIENT_ID; 
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
+const SHEET_TAB_NAME = 'booking';
 
 async function getAuthenticatedClientFromDB(teacherId) {
     const teacher = await Teacher.findById(teacherId).select('refreshToken'); 
-    console.log('Teacher from DB:', teacher);
 
     if (!teacher || !teacher.refreshToken) {
         throw new Error('Teacher not found or missing refresh token in database. Cannot authenticate Google client.');
@@ -31,22 +32,18 @@ async function getAuthenticatedClientFromDB(teacherId) {
         return oauth2Client; 
 
     } catch (error) {
-        // Gyakori hiba: A refresh token is lejárt (pl. 6 hónap után)
         console.error('Failed to refresh access token for teacher:', teacherId, error.message);
         throw new Error(error.message);
     }
 }
 
 async function getPublicAvailability(req, res) {
-    // GET /public/availability/:teacherId
     const { teacherId } = req.params; 
     
     try {
-        // 1. Előkészületek (Hitelesítés és foglalt slotok lekérése a Google-től)
-        const authClient = await getAuthenticatedClientFromDB(teacherId); 
-        
-        // A foglalt időpontok lekérése 14 napra előre
-        const SLOT_DURATION_MINUTES = 60; // 1 órás foglalási idő
+        const authClient = await getAuthenticatedClientFromDB(teacherId);
+
+        const SLOT_DURATION_MINUTES = 60;
         const SLOTS_IN_ADVANCE_DAYS = 14;
         const now = new Date();
         const twoWeeksFromNow = new Date(now.getTime() + SLOTS_IN_ADVANCE_DAYS * 24 * 60 * 60 * 1000);
@@ -61,19 +58,20 @@ async function getPublicAvailability(req, res) {
             singleEvents: true,
         });
         const busySlots = response.data.items.map(event => ({
-            start: new Date(event.start.dateTime || event.start.date), // Date objectek használata egyszerűsíti az összehasonlítást
+            start: new Date(event.start.dateTime || event.start.date),
             end: new Date(event.end.dateTime || event.end.date)
-        }));
+        })); 
+        
+        const availabilityDoc = await Availability.findOne({ teacher: teacherId });
+        const availabilityRules = availabilityDoc ? availabilityDoc.weeklyAvailability : [];
 
-        // 2. TODO: DB-ből recurring szabályok lekérése (Ezt majd be kell vezetned)
-        // MOCK adat: (1=Hétfő, 5=Péntek)
-        const availabilityRules = [
-            { dayOfWeek: 1, start: '09:00', end: '17:00' }, // Monday 9:00-17:00
-            { dayOfWeek: 2, start: '10:00', end: '18:00' }, // Tuesday 10:00-18:00
-            // ... (bővítsd a többi nappal)
-        ]; 
+        if (availabilityRules.length === 0) {
+             return res.status(200).json({ 
+                availableSlots: [], 
+                message: 'No availability rules set for this teacher.' 
+            });
+        }
 
-        // 3. GENERÁLÁS ÉS SZŰRÉS
         const availableSlots = [];
         const todayAtMidnight = new Date(now);
         todayAtMidnight.setHours(0, 0, 0, 0); 
@@ -81,49 +79,45 @@ async function getPublicAvailability(req, res) {
         for (let i = 0; i < SLOTS_IN_ADVANCE_DAYS; i++) {
             const checkDate = new Date(todayAtMidnight);
             checkDate.setDate(todayAtMidnight.getDate() + i);
-            const dayIndex = checkDate.getDay(); // 0 (Sun) to 6 (Sat)
+            const dayIndex = checkDate.getDay(); 
             
             const dayRule = availabilityRules.find(rule => rule.dayOfWeek === dayIndex); 
 
             if (dayRule) {
-                let currentTime = new Date(checkDate);
-                
-                // Beállítjuk a nap kezdetét a szabály alapján
-                const [startHour, startMinute] = dayRule.start.split(':').map(Number);
-                currentTime.setHours(startHour, startMinute, 0, 0);
+               dayRule.slots.forEach(ruleSlot => {
+                    
+                    let currentTime = new Date(checkDate);
+                    const [startHour, startMinute] = ruleSlot.startTime.split(':').map(Number);
+                    currentTime.setHours(startHour, startMinute, 0, 0);
 
-                // Beállítjuk a nap végét
-                const [endHour, endMinute] = dayRule.end.split(':').map(Number);
-                const dayEndTime = new Date(checkDate);
-                dayEndTime.setHours(endHour, endMinute, 0, 0);
+                    const [endHour, endMinute] = ruleSlot.endTime.split(':').map(Number);
+                    const ruleEndTime = new Date(checkDate);
+                    ruleEndTime.setHours(endHour, endMinute, 0, 0);
+                    while (currentTime.getTime() + SLOT_DURATION_MINUTES * 60 * 1000 <= ruleEndTime.getTime()) {
+                        
+                        const slotStart = new Date(currentTime);
+                        const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60 * 1000);
 
-                // Generálás: Amíg a következő slot vége még a munkaidőn belül van
-                while (currentTime.getTime() + SLOT_DURATION_MINUTES * 60 * 1000 <= dayEndTime.getTime()) {
-                    const slotStart = new Date(currentTime);
-                    const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60 * 1000);
+                        const isBusy = busySlots.some(busy => 
+                            slotStart.getTime() < busy.end.getTime() && slotEnd.getTime() > busy.start.getTime()
+                        );
 
-                    // Szűrés: Check for Overlap (slotStart < busyEnd AND slotEnd > busyStart)
-                    const isBusy = busySlots.some(busy => 
-                        slotStart.getTime() < busy.end.getTime() && slotEnd.getTime() > busy.start.getTime()
-                    );
+                        if (!isBusy) {
+                            availableSlots.push({
+                                start: slotStart.toISOString(),
+                                end: slotEnd.toISOString(),
+                                dateKey: slotStart.toISOString().split('T')[0] 
+                            });
+                        }
 
-                    if (!isBusy) {
-                        availableSlots.push({
-                            start: slotStart.toISOString(), // ISO String a frontendnek
-                            end: slotEnd.toISOString(),
-                            // Dátum formázása a frontend csoportosításhoz
-                            dateKey: slotStart.toISOString().split('T')[0] 
-                        });
+                        currentTime = slotEnd; 
                     }
-
-                    // Lépés a következő slotra
-                    currentTime = slotEnd; 
-                }
+                });
             }
         }
         
         res.status(200).json({ 
-            availableSlots: availableSlots, // A szabad slotok listája
+            availableSlots: availableSlots,
             message: 'Teacher availability slots calculated.'
         });
 
@@ -133,42 +127,221 @@ async function getPublicAvailability(req, res) {
     }
 }
 
-async function handlePublicBooking(req, res) {
-    // POST /public/book
-    const { teacherId, bookingDetails } = req.body;
+async function getOrCreateBookingSheetId(authClient) {
+    const drive = google.drive({ version: 'v3', auth: authClient });
+    const sheets = google.sheets({ version: 'v4', auth: authClient });
 
-    // TODO: Validáció: Ellenőrizd a bemenő adatokat.
-    // TODO: DB Mentés: Hozz létre egy Appointment bejegyzést.
-    // TODO: Google API: Hozz létre egy eseményt a tanár naptárában.
-    res.status(201).json({ message: 'Appointment booked successfully.' });
+    const FOLDER_NAME = 'syncra';
+    const SHEET_NAME = 'booking'; 
+
+    let folderId = null;
+    let spreadsheetId = null;
+
+    let folderRes = await drive.files.list({
+        q: `name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`,
+        fields: 'files(id)',
+        spaces: 'drive',
+    });
+
+    if (folderRes.data.files.length > 0) {
+        folderId = folderRes.data.files[0].id;
+    } else {
+        const folderMetadata = {
+            'name': FOLDER_NAME,
+            'mimeType': 'application/vnd.google-apps.folder',
+        };
+        const folder = await drive.files.create({
+            resource: folderMetadata,
+            fields: 'id',
+        });
+        folderId = folder.data.id;
+        console.log(`'${FOLDER_NAME}' mappa létrehozva (ID: ${folderId})`);
+    }
+
+    let sheetRes = await drive.files.list({
+        q: `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and '${folderId}' in parents and trashed=false`,
+        fields: 'files(id)',
+        spaces: 'drive',
+    });
+
+    if (sheetRes.data.files.length > 0) {
+        spreadsheetId = sheetRes.data.files[0].id;
+    } else {
+        const sheetMetadata = {
+            'name': SHEET_NAME,
+            'parents': [folderId],
+            'mimeType': 'application/vnd.google-apps.spreadsheet',
+        };
+        const sheet = await drive.files.create({
+            resource: sheetMetadata,
+            fields: 'id',
+        });
+        spreadsheetId = sheet.data.id;
+        console.log(`'${SHEET_NAME}' Google Sheet created (ID: ${spreadsheetId})`);
+
+        const headers = [['Name', 'Email', 'Date and Time', 'Event ID']];
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: `A1`,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: headers },
+        });
+
+        const sheetMeta = await sheets.spreadsheets.get({
+            spreadsheetId: spreadsheetId,
+            fields: 'sheets.properties',
+        });
+
+        const defaultSheetId = sheetMeta.data.sheets[0].properties.sheetId;
+
+        const requests = [
+            {
+                setBasicFilter: {
+                    filter: {
+                        range: {
+                            sheetId: defaultSheetId,
+                            startRowIndex: 0,
+                            endRowIndex: 1,
+                        }
+                    }
+                }
+            }
+        ];
+
+        await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: spreadsheetId,
+            resource: { requests },
+        });
+    }
+
+    return spreadsheetId; 
 }
 
-// --- 3. Elérhetőség Kezelése (Teacher Availability Management) ---
-
-async function getRecurringAvailability(req, res) {
-    // GET /api/availability/settings (Hitelesítés szükséges)
-    // TODO: Ellenőrizd a req.session.user meglétét.
-    // TODO: DB Lekérés: Olvasd ki a tanár beállított recurring szabályait (pl. H-P 9-17).
-    res.status(200).json({ rules: [] });
+async function autoResizeSheetColumns(auth, spreadsheetId, sheetId) {
+    const sheets = google.sheets({ version: 'v4', auth });
+    
+    const request = {
+        autoResizeDimensions: {
+            dimensions: {
+                sheetId: sheetId,
+                dimension: 'COLUMNS', 
+                startIndex: 0,
+                endIndex: 4
+            }
+        }
+    };
+    
+    await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: spreadsheetId,
+        resource: { requests: [request] },
+    });
 }
 
-async function setRecurringAvailability(req, res) {
-    // POST /api/availability/settings (Hitelesítés szükséges)
-    const { rules } = req.body;
+async function createBooking(req, res) {
+    const { teacherId, clientName, clientEmail, notes, slotStart, slotEnd } = req.body;
+    const BOOKING_KEYWORD = 'SYNCRA_BOOKING'; 
+    
+    try {
+        const authClient = await getAuthenticatedClientFromDB(teacherId);
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+        const SPREADSHEET_ID = await getOrCreateBookingSheetId(authClient);
+        const sheets = google.sheets({ version: 'v4', auth: authClient });
 
-    // TODO: DB Mentés: Frissítsd vagy hozz létre Availability bejegyzést a tanárhoz.
-    res.status(200).json({ message: 'Availability rules saved.' });
+        const teacherInfo = await getGoogleUserInfo(authClient); 
+
+        const event = {
+            summary: `Booking: ${clientName}`,
+            description: `${notes}\n\n[${BOOKING_KEYWORD}]`, 
+            start: {
+                dateTime: slotStart,
+                timeZone: 'Europe/Budapest',
+            },
+            end: {
+                dateTime: slotEnd,
+                timeZone: 'Europe/Budapest',
+            },
+            attendees: [
+                { email: clientEmail, displayName: clientName, responseStatus: 'needsAction' },
+                { email: teacherInfo.email, self: true, responseStatus: 'needsAction'}
+            ],
+            sendUpdates: 'all', 
+            reminders: {
+                useDefault: false,
+                overrides: [
+                    { method: 'email', minutes: 60 },
+                    { method: 'email', minutes: 5 },
+                    { method: 'popup', minutes: 10 },
+                ],
+            },
+            conferenceData: {},
+        };
+
+        const calendarResponse = await calendar.events.insert({
+            calendarId: 'primary',
+            resource: event,
+            sendUpdates: 'all',
+            sendNotifications: true,
+            conferenceDataVersion: 1
+        });
+
+        const eventId = calendarResponse.data.id;
+
+    try {
+        await appendRowToSheet(
+            authClient, 
+            SPREADSHEET_ID,
+            eventId,
+            clientName, 
+            clientEmail, 
+            slotStart, 
+            slotEnd
+        );
+
+        const sheetMeta = await sheets.spreadsheets.get({
+                spreadsheetId: SPREADSHEET_ID,
+                fields: 'sheets.properties',
+            });
+        const sheetId = sheetMeta.data.sheets[0].properties.sheetId;
+        
+        await autoResizeSheetColumns(authClient, SPREADSHEET_ID, sheetId);
+    } catch (sheetError) {
+        console.error('Hiba a Google Sheets mentéskor:', sheetError);
+    }
+
+        res.status(200).json({ 
+            message: 'Foglalás sikeresen létrehozva.',
+            eventUrl: calendarResponse.data.htmlLink
+        });
+
+    } catch (error) {
+        console.error('CRITICAL ERROR during booking creation:', error);
+        res.status(500).json({ message: 'Error creating booking.' });
+    }
 }
 
-async function blockSpecificTime(req, res) {
-    // POST /api/availability/block (Hitelesítés szükséges)
-    const { startTime, endTime, reason } = req.body;
+async function appendRowToSheet(auth, spreadsheetId, eventId, clientName, clientEmail, slotStart, slotEnd) {
+    const sheets = google.sheets({ version: 'v4', auth });
 
-    // TODO: DB Mentés: Hozz létre egy 'blocked' bejegyzést a saját DB-ben vagy a Google naptárban.
-    res.status(201).json({ message: 'Time blocked successfully.' });
+    const formattedDateTime = `${new Date(slotStart).toLocaleString('hu-HU')} - ${new Date(slotEnd).toLocaleTimeString('hu-HU')}`;
+
+    const dataRow = [
+        clientName, 
+        clientEmail, 
+        formattedDateTime,
+        eventId 
+    ];
+
+    const resource = {
+        values: [dataRow],
+    };
+    
+    await sheets.spreadsheets.values.append({
+        spreadsheetId: spreadsheetId,
+        range: `A1`,
+        valueInputOption: 'USER_ENTERED',
+        resource,
+    });
 }
-
-// --- 4. Naptár Integráció (Calendar Integration) ---
 
 async function listGoogleCalendars(req, res) {
     // GET /api/calendars/list (Hitelesítés szükséges)
@@ -186,11 +359,9 @@ async function selectCalendarsForSync(req, res) {
 }
 
 module.exports = {
+    getAuthenticatedClientFromDB,
     getPublicAvailability,
-    handlePublicBooking,
-    getRecurringAvailability,
-    setRecurringAvailability,
-    blockSpecificTime,
+    createBooking,
     listGoogleCalendars,
     selectCalendarsForSync,
 };

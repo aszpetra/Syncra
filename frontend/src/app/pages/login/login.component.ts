@@ -13,7 +13,7 @@ import { AuthService } from '../../sevices/auth.service';
 export class LoginComponent {
   private clientId = environment.googleClientId;
   private redirectUri = 'http://localhost:3000/auth';
-  private scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
+  private scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
 
   loginWithGoogleCalendarAccess(): void {
