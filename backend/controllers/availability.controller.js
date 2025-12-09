@@ -1,6 +1,4 @@
 const Availability = require('../models/availability.model');
-const { listUserCalendars } = require('../services/calendar.service');
-const { getAuthenticatedClientFromDB } = require('./booking.controller');
 
 async function saveTeacherAvailability(req, res) {
     try {
@@ -47,6 +45,5 @@ async function getTeacherAvailability(req, res) {
 
 module.exports = {
     saveTeacherAvailability,
-    getTeacherAvailability,
-    getCalendarList
+    getTeacherAvailability
 };

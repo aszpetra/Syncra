@@ -18,11 +18,11 @@ const teacherSchema = new mongoose.Schema({
   blockingCalendarIds: { 
         type: [String],
         default: []
-    },
-    bookingCalendarId: { 
-        type: String,
-        default: 'primary'
-    },
+  },
+  bookingCalendarId: { 
+      type: String,
+      default: 'primary'
+  },
   createdAt: {
     type: Date,
     default: Date.now

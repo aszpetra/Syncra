@@ -16,6 +16,13 @@ export const appConfig: ApplicationConfig = {
        withFetch(),
     ),
     provideAnimations(),
-    provideToastr()
+    provideToastr({
+      timeOut: 3000,
+      extendedTimeOut: 1000,
+      positionClass: 'toast-top-right',
+      preventDuplicates: true,
+      progressBar: true,
+      closeButton: true,
+    })
   ]
 };

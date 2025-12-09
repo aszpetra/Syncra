@@ -1,8 +1,6 @@
 declare const google: any;
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { environment } from '../../../environments';
-import { AuthService } from '../../sevices/auth.service';
 
 @Component({
   selector: 'app-login',

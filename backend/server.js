@@ -16,7 +16,9 @@ const client = new OAuth2Client(client_id);
 
 app.use(cors({
   origin: 'http://localhost:4200',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(session({
@@ -26,7 +28,6 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: false,
-    sameSite: 'lax',
     maxAge: 1000 * 60 * 60 * 24
   }
 }));

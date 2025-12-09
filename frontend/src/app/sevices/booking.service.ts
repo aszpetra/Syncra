@@ -29,7 +29,11 @@ export class BookingService {
     return this.http.get(`${this.apiBaseUrl}/api/calendars/list`, { withCredentials: true });
   }
 
-  saveSelectedCalendars(ids: string[]): Observable<any> {
-    return this.http.post(`${this.apiBaseUrl}/api/calendars/select`, { selectedCalendarIds: ids }, { withCredentials: true });
+  saveSelectedCalendars(settings: { blockingIds: string[], bookingId: string }): Observable<any> {
+    return this.http.post(`${this.apiBaseUrl}/api/calendars/select`, { selectedCalendarIds: settings.blockingIds, bookingId: settings.bookingId }, { withCredentials: true });
+  }
+
+  getBlockingCalendars(): Observable<any> {
+    return this.http.get(`${this.apiBaseUrl}/api/calendars/blocking`, { withCredentials: true });
   }
 }

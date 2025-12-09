@@ -6,7 +6,6 @@ const Availability = require('../models/availability.model');
 
 const client_id = process.env.GOOGLE_CLIENT_ID; 
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
-const SHEET_TAB_NAME = 'booking';
 
 async function getAuthenticatedClientFromDB(teacherId) {
     const teacher = await Teacher.findById(teacherId).select('refreshToken'); 
@@ -42,6 +41,7 @@ async function getPublicAvailability(req, res) {
     
     try {
         const authClient = await getAuthenticatedClientFromDB(teacherId);
+        const teacher = await Teacher.findById(teacherId);
 
         const SLOT_DURATION_MINUTES = 60;
         const SLOTS_IN_ADVANCE_DAYS = 14;
@@ -50,17 +50,31 @@ async function getPublicAvailability(req, res) {
 
         const calendar = google.calendar({ version: 'v3', auth: authClient });
 
-        const response = await calendar.events.list({
-            calendarId: 'primary',
-            timeMin: now.toISOString(),
-            timeMax: twoWeeksFromNow.toISOString(),
-            orderBy: 'startTime',
-            singleEvents: true,
+        let calendarIdsToCheck = teacher.blockingCalendarIds;
+
+        const freeBusyResponse = await calendar.freebusy.query({
+            requestBody: {
+                timeMin: now.toISOString(),
+                timeMax: twoWeeksFromNow.toISOString(),
+                orderBy: 'startTime',
+                items: calendarIdsToCheck.map(id => ({ id: id })) 
+            },
         });
-        const busySlots = response.data.items.map(event => ({
-            start: new Date(event.start.dateTime || event.start.date),
-            end: new Date(event.end.dateTime || event.end.date)
-        })); 
+
+        let allBusySlots = [];
+        const calendarsData = freeBusyResponse.data.calendars;
+
+        for (const calId in calendarsData) {
+            const calendarData = calendarsData[calId];
+            if (calendarData.busy && calendarData.busy.length > 0) {
+                allBusySlots = allBusySlots.concat(calendarData.busy);
+            }
+        }
+
+        const busySlots = allBusySlots.map(slot => ({
+            start: new Date(slot.start),
+            end: new Date(slot.end)
+        }));
         
         const availabilityDoc = await Availability.findOne({ teacher: teacherId });
         const availabilityRules = availabilityDoc ? availabilityDoc.weeklyAvailability : [];
@@ -344,18 +358,82 @@ async function appendRowToSheet(auth, spreadsheetId, eventId, clientName, client
 }
 
 async function listGoogleCalendars(req, res) {
-    // GET /api/calendars/list (Hitelesítés szükséges)
-    // TODO: Használd az getAuthenticatedClient helper-t a session tokenekkel.
-    // TODO: Google API: Hívd a 'calendarList.list' végpontot.
-    res.status(200).json({ calendars: [{ id: 'primary', summary: 'Primary Calendar' }] });
+    try {
+        const teacherId = req.session.user._id;
+        const authClient = await getAuthenticatedClientFromDB(teacherId);
+        
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        const response = await calendar.calendarList.list({
+            minAccessRole: 'reader'
+        });
+
+        const calendars = response.data.items.map(cal => ({
+            id: cal.id,
+            summary: cal.summary,
+            primary: cal.primary || false,
+            backgroundColor: cal.backgroundColor
+        }));
+        console.log({ calendars });
+        res.status(200).json({ calendars });
+        
+
+    } catch (error) {
+        console.error('Hiba a naptárak listázásakor:', error.message);
+        if (error.message.includes('Nincs session token')) {
+            return res.status(401).json({ message: 'Nincs bejelentkezve.' });
+        }
+        res.status(500).json({ message: 'Nem sikerült lekérni a naptárakat.' });
+    }
 }
 
 async function selectCalendarsForSync(req, res) {
-    // POST /api/calendars/select (Hitelesítés szükséges)
-    const { selectedCalendarIds } = req.body;
+    const { selectedCalendarIds, bookingId } = req.body;
 
-    // TODO: DB Mentés: Mentsd el a kiválasztott naptár ID-kat a Teacher modellhez.
-    res.status(200).json({ message: 'Selected calendars saved for synchronization.' });
+    if (!Array.isArray(selectedCalendarIds)) {
+        return res.status(400).json({ message: 'Hibás adatformátum. Tömböt várunk.' });
+    }
+
+    const teacherId = req.session?.user?._id;
+
+    if (!teacherId) {
+        return res.status(401).json({ message: 'Nincs bejelentkezve.' });
+    }
+
+    try {
+        await Teacher.findByIdAndUpdate(teacherId, {
+            blockingCalendarIds: selectedCalendarIds,
+            bookingCalendarId: bookingId
+        });
+
+        res.status(200).json({ message: 'A szinkronizációs beállítások sikeresen mentve.' });
+    } catch (error) {
+        console.error('Hiba a naptár beállítások mentésekor:', error);
+        res.status(500).json({ message: 'Szerver hiba a mentés során.' });
+    }
+}
+
+async function getBlockingCalendars(req, res) {
+    try {
+        const teacherId = req.session.user._id;
+
+        const teacher = await Teacher.findById(teacherId).select('blockingCalendarIds bookingCalendarId');
+
+        if (!teacher) {
+            return res.status(404).json({ message: 'Tanár nem található.' });
+        }
+
+        console.log('Blocking calendars retrieved:', teacher.blockingCalendarIds, teacher.bookingCalendarId);
+
+        res.status(200).json({
+            blockingCalendarIds: teacher.blockingCalendarIds || [],
+            bookingCalendarId: teacher.bookingCalendarId || ''
+        });
+
+    } catch (error) {
+        console.error('Hiba a blokkoló naptárak lekérésekor:', error);
+        res.status(500).json({ message: 'Szerverhiba az adatok lekérésekor.' });
+    }
 }
 
 module.exports = {
@@ -364,4 +442,5 @@ module.exports = {
     createBooking,
     listGoogleCalendars,
     selectCalendarsForSync,
+    getBlockingCalendars
 };
