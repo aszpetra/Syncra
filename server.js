@@ -14,7 +14,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.use(express.json());
 
 app.use(cors({
-  origin: 'http://localhost:4200',
+  origin: 'https://lively-klepon-74f07b.netlify.app/',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

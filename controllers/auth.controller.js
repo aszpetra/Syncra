@@ -52,7 +52,7 @@ async function handleGoogleLogin(req, res) {
         console.error("Session save error:", err);
         return res.status(500).json({ message: "Internal server error" });
       }
-      res.redirect('http://localhost:4200/dashboard');
+      res.redirect('https://lively-klepon-74f07b.netlify.app/dashboard');
     });
   } catch (error) {
     console.error("Google auth failed:", error);
@@ -65,7 +65,7 @@ async function getAuthenticatedClient(req) {
   const requestClient = new google.auth.OAuth2(
     client_id,
     client_secret,
-    redirect_uri
+    
   );
   requestClient.setCredentials(req.session.tokens);
   try {
