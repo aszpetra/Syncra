@@ -14,7 +14,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.use(express.json());
 
 app.use(cors({
-  origin: 'https://lively-klepon-74f07b.netlify.app/',
+  origin: 'https://lively-klepon-74f07b.netlify.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -32,7 +32,8 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: isProduction,
-    maxAge: 1000 * 60 * 60 * 24
+    maxAge: 1000 * 60 * 60 * 24,
+    sameSite: isProduction ? 'none' : 'lax'
   }
 }));
 
