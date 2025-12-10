@@ -17,6 +17,7 @@ async function createBooking(req, res) {
         const sheets = google.sheets({ version: 'v4', auth: authClient });
 
         const teacherInfo = await getGoogleUserInfo(authClient); 
+        const teacher = await getUserCalendars(teacherId);
 
         const event = {
             summary: `Booking: ${clientName}`,
@@ -48,7 +49,7 @@ async function createBooking(req, res) {
             },
         };
 
-        const calendarResponse = await addEventToCalendar(calendar, event);
+        const calendarResponse = await addEventToCalendar(calendar, event, teacher.bookingCalendarId);
 
         const eventId = calendarResponse.data.id;
 

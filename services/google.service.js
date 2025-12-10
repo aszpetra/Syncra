@@ -12,9 +12,9 @@ async function getAllCalendarEvents(calendar, calendarIdsToCheck, twoWeeksFromNo
         });
 }
 
-async function addEventToCalendar(calendar, event) {
+async function addEventToCalendar(calendar, event, calendarId) {
     return calendar.events.insert({
-                calendarId: 'primary',
+                calendarId: calendarId,
                 resource: event,
                 sendUpdates: 'all',
                 sendNotifications: true,

@@ -1,8 +1,7 @@
 require('dotenv').config();
 const { google } = require('googleapis');
 const { OAuth2Client } = require('google-auth-library');
-const { createUser } = require('../models/teacher.model');
-const { getUserByGoogleId, getUserRefreshToken } = require('./db.service');
+const { getUserByGoogleId, getUserRefreshToken, createUser } = require('./db.service');
 
 const client_id = process.env.GOOGLE_CLIENT_ID;
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
