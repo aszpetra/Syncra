@@ -16,7 +16,7 @@ app.use(express.json());
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: 'https://lively-klepon-74f07b.netlify.app',
+  origin: process.env.FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -42,7 +42,7 @@ app.use(session({
 app.use('/', routes);
 
 app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
+  console.log(`Server listening at port:${port}`);
 });
 
 mongoose.connect(mongo_uri, {})

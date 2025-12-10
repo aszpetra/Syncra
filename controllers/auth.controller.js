@@ -52,7 +52,7 @@ async function handleGoogleLogin(req, res) {
         console.error("Session save error:", err);
         return res.status(500).json({ message: "Internal server error" });
       }
-      res.redirect('https://lively-klepon-74f07b.netlify.app/dashboard');
+      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     });
   } catch (error) {
     console.error("Google auth failed:", error);
