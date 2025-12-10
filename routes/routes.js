@@ -12,7 +12,7 @@ router.get('/auth', handleGoogleLogin);
 router.get('/api/data', isAuthenticated, handleDataRequestFromGoogle);
 router.post('/api/logout', isAuthenticated, handleLogout);
 
-router.get('/api/user/id', isAuthenticated, getTeacherIdForLink);
+router.get('/api/user/id', getTeacherIdForLink);
 router.get('/api/calendars/list', isAuthenticated, listGoogleCalendars);
 router.post('/api/calendars/select', isAuthenticated, selectCalendarsForSync);
 router.get('/api/calendars/blocking', isAuthenticated, getBlockingCalendars);
