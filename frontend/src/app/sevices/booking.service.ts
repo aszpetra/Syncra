@@ -14,11 +14,11 @@ export class BookingService {
   private http = inject(HttpClient);
 
   getPublicAvailability(teacherId: string): Observable<any> {
-    return this.http.get(`${this.apiBaseUrl}/public/availability/${teacherId}`);
+    return this.http.get(`${this.apiBaseUrl}/api/public/availability/${teacherId}`);
   }
 
   submitBooking(bookingData: any): Observable<any> {
-    return this.http.post(`${this.apiBaseUrl}/public/book`, bookingData);
+    return this.http.post(`${this.apiBaseUrl}/api/public/book`, bookingData);
   }
 
   blockTime(blockData: any): Observable<any> {

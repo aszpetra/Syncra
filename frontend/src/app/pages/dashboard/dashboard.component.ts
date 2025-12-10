@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from '../../sevices/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,14 +12,22 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent{
+export class DashboardComponent {
+   private authService = inject(AuthService);
 
   constructor(
     private router: Router
   ) {}
 
   logout() {
-    localStorage.removeItem('tokens');
-    this.router.navigate(['/login']);
+   this.authService.logout().subscribe({
+        next: () => {
+            this.router.navigate(['/login']);
+        },
+        error: (err) => {
+            console.error('Logout error:', err);
+            this.router.navigate(['/login']);
+        }
+    });
   }
 }

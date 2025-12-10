@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 })
 export class AuthService {
   private userIdUrl = `${environment.apiBaseUrl}/api/user/id`;
-  private dataUrl = `${environment.apiBaseUrl}/data`;
+  private dataUrl = `${environment.apiBaseUrl}/api/data`;
   private http = inject(HttpClient);
 
 
@@ -23,5 +23,9 @@ export class AuthService {
 
   getTeacherId(): Observable<{ teacherId: string }> {
       return this.http.get<{ teacherId: string }>(this.userIdUrl, { withCredentials: true });
+  }
+
+  logout(): Observable<any> {
+    return this.http.post(`${environment.apiBaseUrl}/api/logout`, {}, { withCredentials: true });
   }
 }

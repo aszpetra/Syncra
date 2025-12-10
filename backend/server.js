@@ -2,17 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
 const cors = require('cors');
-const {OAuth2Client} = require('google-auth-library');
 const routes = require('./routes/routes');
 
 const app = express();
-const client_id = process.env.GOOGLE_CLIENT_ID;
 const port =  process.env.PORT;
 const mongo_uri = process.env.MONGO_URI;
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(express.json());
-const client = new OAuth2Client(client_id);
 
 app.use(cors({
   origin: 'http://localhost:4200',
@@ -22,12 +21,17 @@ app.use(cors({
 }));
 
 app.use(session({
-  secret: 'nagyontitkoskulcs',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60
+  }),
   cookie: {
     httpOnly: true,
-    secure: false,
+    secure: isProduction,
     maxAge: 1000 * 60 * 60 * 24
   }
 }));

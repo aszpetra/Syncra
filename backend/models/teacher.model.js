@@ -12,7 +12,6 @@ const teacherSchema = new mongoose.Schema({
     unique: true
   },
   name: String,
-  profilePicture: String,
   accessToken: String,
   refreshToken: String,
   blockingCalendarIds: { 

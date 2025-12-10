@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { google } = require("googleapis");
 const { createNewUserLogIn } = require('../services/auth.service');
-const Teacher = require('../models/teacher.model');
+const { getCalendarEvents } = require('./calendar.contorller');
 
 const client_id = process.env.GOOGLE_CLIENT_ID;
 const client_secret = process.env.GOOGLE_CLIENT_SECRET;
@@ -26,42 +26,7 @@ async function getGoogleUserInfo(authClient) {
   return data;
 }
 
-async function getCalendarEvents(authClient, teacherId) {
-  const calendar = google.calendar({ version: 'v3', auth: authClient });
-  const oneWeekInMilisec = 7 * 24 * 60 * 60 * 1000;
 
-  const teacher = await Teacher.findById(teacherId).select('blockingCalendarIds');
-  const calendarIds = teacher ? teacher.blockingCalendarIds : [];
-  const calendarsToQuery = (calendarIds && calendarIds.length > 0) ? calendarIds : ['primary'];
-
-  const promises = calendarsToQuery.map(async (calId) => {
-    try {
-      const res = await calendar.events.list({
-        calendarId: calId,
-        timeMin: (new Date(Date.now() - oneWeekInMilisec)).toISOString(),
-        singleEvents: true,
-        orderBy: 'startTime',
-      });
-      
-      return res.data.items.map(event => ({
-        ...event
-      }));
-    } catch (error) {
-      console.error(`Hiba a(z) ${calId} naptár lekérdezésekor:`, error.message);
-      return [];
-    }
-  });
-
-  const results = await Promise.all(promises);
-  const allEvents = results.flat();
-  allEvents.sort((a, b) => {
-    const startA = new Date(a.start.dateTime || a.start.date).getTime();
-    const startB = new Date(b.start.dateTime || b.start.date).getTime();
-    return startA - startB;
-  });
-
-  return allEvents;
-}
 
 async function handleGoogleLogin(req, res) {
   const code = req.query.code;
@@ -96,11 +61,6 @@ async function handleGoogleLogin(req, res) {
 }
 
 async function getAuthenticatedClient(req) {
-
-  if (!req.session || !req.session.tokens) {
-    console.error('Nincs session token (valószínűleg nincs bejelentkezve)');
-    throw new Error('Nincs session token');
-  }
 
   const requestClient = new google.auth.OAuth2(
     client_id,
@@ -147,13 +107,21 @@ async function handleDataRequestFromGoogle(req, res) {
   }
 }
 
-async function handleLogout(req, res) {};
+async function handleLogout(req, res) {
+  req.session.destroy((err) => {
+        if (err) {
+            console.error('Error while logging out (session destroy):', err);
+            return res.status(500).json({ message: 'Did not logout successfully.' });
+        }
+
+        res.clearCookie('connect.sid', { path: '/' });
+
+        return res.status(200).json({ message: 'Logged out successfully' });
+    });
+};
 
 async function getTeacherIdForLink(req, res) {
-    if (!req.session.user || !req.session.user._id) {
-        return res.status(401).json({ message: 'Not authenticated.' });
-    }
-    res.status(200).json({ teacherId: req.session.user._id });
+  res.status(200).json({ teacherId: req.session.user._id });
 }
 
 module.exports = { getGoogleUserInfo, handleGoogleLogin, handleDataRequestFromGoogle, handleLogout, getTeacherIdForLink, getCalendarEvents, getAuthenticatedClient };

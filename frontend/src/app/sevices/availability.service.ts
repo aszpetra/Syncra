@@ -21,10 +21,10 @@ export class AvailabilityService {
   private http = inject(HttpClient);
 
   getAvailability(teacherId: string): Observable<any> {
-    return this.http.get(`${this.apiBaseUrl}/availability/${teacherId}`, { withCredentials: true });
+    return this.http.get(`${this.apiBaseUrl}/api/availability/${teacherId}`, { withCredentials: true });
   }
 
   saveAvailability(teacherId: string, weeklyAvailability: any): Observable<any> {
-    return this.http.post(`${this.apiBaseUrl}/availability`, { teacherId, weeklyAvailability }, { withCredentials: true });
+    return this.http.post(`${this.apiBaseUrl}/api/availability`, { teacherId, weeklyAvailability }, { withCredentials: true });
   }
 }
