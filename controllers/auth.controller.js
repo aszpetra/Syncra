@@ -52,7 +52,7 @@ async function handleGoogleLogin(req, res) {
         console.error("Session save error:", err);
         return res.status(500).json({ message: "Internal server error" });
       }
-      res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+      res.redirect('https://syncra-app.netlify.app/dashboard');
     });
   } catch (error) {
     console.error("Google auth failed:", error);
