@@ -1,6 +1,7 @@
 const { google } = require('googleapis');
 require('dotenv').config();
 const { getGoogleUserInfo } = require('./auth.controller');
+const crypto = require('crypto');
 const { getGoogleClientAndRefreshToken } = require('../services/auth.service');
 const { getOrCreateBookingSheetId, autoResizeSheetColumns, appendRowToSheet, addEventToCalendar, getSheetId } = require('../services/google.service');
 const { updateUserCalendars, getUserCalendars } = require('../services/db.service');
@@ -21,12 +22,10 @@ async function createBooking(req, res) {
             summary: `Booking: ${clientName}`,
             description: `${notes}\n\n[${BOOKING_KEYWORD}]`, 
             start: {
-                dateTime: slotStart,
-                timeZone: 'Europe/Budapest',
+                dateTime: slotStart
             },
             end: {
-                dateTime: slotEnd,
-                timeZone: 'Europe/Budapest',
+                dateTime: slotEnd
             },
             attendees: [
                 { email: clientEmail, displayName: clientName, responseStatus: 'needsAction' },
@@ -41,7 +40,12 @@ async function createBooking(req, res) {
                     { method: 'popup', minutes: 10 },
                 ],
             },
-            conferenceData: {},
+            conferenceData: {
+                createRequest: {
+                    requestId: crypto.randomUUID(),
+                    conferenceSolutionKey: { type: "hangoutsMeet" },
+                },
+            },
         };
 
         const calendarResponse = await addEventToCalendar(calendar, event);

@@ -23,10 +23,6 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
-        path: 'settings',
-        loadComponent: () => import('./pages/settings/settings.component').then(a => a.SettingsComponent)
-      },
-      {
         path: 'handle-calendars',
         loadComponent: () => import('./pages/handle-calendars/handle-calendars.component').then(a => a.HandleCalendarsComponent)
       },
