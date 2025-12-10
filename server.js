@@ -13,6 +13,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(express.json());
 
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: 'https://lively-klepon-74f07b.netlify.app',
   credentials: true,
